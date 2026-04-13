@@ -101,6 +101,9 @@ export default function HomePage() {
     [messages, selectedId],
   );
 
+  const canGenerate = !!selectedMessage && !isLoading;
+  const canApprove = suggestedReply.trim().length > 0 && !isLoading;
+
   async function handleGenerateReply() {
     if (!selectedMessage) return;
 
@@ -817,7 +820,7 @@ export default function HomePage() {
                       type="button"
                       className="primary-btn"
                       onClick={handleGenerateReply}
-                      disabled={!selectedMessage || isLoading}
+                      disabled={!canGenerate}
                     >
                       {isLoading ? "Génération..." : "Proposer une réponse"}
                     </button>
@@ -905,4 +908,4 @@ export default function HomePage() {
       </main>
     </>
   );
-                                       }
+                }
