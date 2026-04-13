@@ -1,4 +1,8 @@
-// src/ai/generateReply.ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export type GenerateReplyInput = {
   content: string;
@@ -8,23 +12,20 @@ export type GenerateReplyInput = {
 export async function generateReply(
   input: GenerateReplyInput,
 ): Promise<string> {
-  const text = input.content.toLowerCase().trim();
+  const response = await client.responses.create({
+    model: "gpt-5.4",
+    input: [
+      {
+        role: "system",
+        content:
+          "You generate short, clear, professional replies for incoming customer messages. Keep the response concise, polite, and directly usable for a real business conversation by SMS.",
+      },
+      {
+        role: "user",
+        content: input.content,
+      },
+    ],
+  });
 
-  if (text.includes("dispo") || text.includes("rendez-vous")) {
-    return "Bonjour, oui, je peux vous proposer demain à 18h. Est-ce que cela vous conviendrait ?";
-  }
-
-  if (text.includes("prix") || text.includes("tarif")) {
-    return "Bonjour, merci pour votre message. Pouvez-vous me préciser votre demande afin que je vous donne le bon tarif ?";
-  }
-
-  if (text.includes("facture")) {
-    return "Bonjour, bien sûr. Je regarde cela et je reviens vers vous rapidement avec la facture demandée.";
-  }
-
-  if (text.includes("merci")) {
-    return "Bonjour, avec plaisir. Je reste à votre disposition si besoin.";
-  }
-
-  return "Bonjour, merci pour votre message. Je reviens vers vous rapidement.";
+  return response.output_text?.trim() || "Bonjour, merci pour votre message.";
 }
