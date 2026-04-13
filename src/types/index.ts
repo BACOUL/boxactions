@@ -13,12 +13,21 @@ export type Message = {
   id: string;
   conversationId: string;
   channel: Channel;
+
   from: string;
   to: string;
+
   content: string;
   subject?: string | null;
+
   receivedAt: string;
   status: MessageStatus;
+
+  metadata?: {
+    provider?: string;
+    providerMessageId?: string;
+    contactName?: string;
+  };
 };
 
 export type SuggestionType =
@@ -31,10 +40,22 @@ export type SuggestionType =
 export type Suggestion = {
   id: string;
   messageId: string;
+
   type: SuggestionType;
+
   summary: string;
   proposedText?: string | null;
+
   confidence?: number | null;
+
+  context?: {
+    detectedIntent?: string;
+    priority?: "low" | "medium" | "high";
+    suggestedActionLabel?: string;
+  };
+
+  payload?: Record<string, unknown>;
+
   createdAt: string;
 };
 
@@ -44,8 +65,12 @@ export type Decision = {
   id: string;
   messageId: string;
   suggestionId: string;
+
   action: DecisionAction;
+
   editedText?: string | null;
+  note?: string | null;
+
   decidedAt: string;
   decidedBy: string;
 };
@@ -63,9 +88,14 @@ export type Execution = {
   messageId: string;
   suggestionId: string;
   decisionId: string;
+
   type: ExecutionType;
   status: ExecutionStatus;
+
   payload: Record<string, unknown>;
+  result?: Record<string, unknown> | null;
+  error?: string | null;
+
   executedAt?: string | null;
   createdAt: string;
 };
