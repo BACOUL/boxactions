@@ -1,5 +1,3 @@
-// src/test-sms-flow.ts
-
 import { createMessage, updateMessageStatus } from "./messages/message.service";
 import { createSuggestion } from "./suggestions/suggestion.service";
 import { createDecision } from "./decisions/decision.service";
@@ -8,32 +6,9 @@ import {
   updateExecutionStatus,
 } from "./executions/execution.service";
 import { generateReply } from "./ai/generateReply";
+import { classifyMessage } from "./ai/classifyMessage";
+import { sendSms } from "./executions/sendSms";
 
-/**
- * Temporary fake SMS sender.
- * Replace this later with Twilio or another provider.
- */
-async function sendSms(to: string, body: string): Promise<{ providerId: string }> {
-  console.log("\n--- SMS SENT ---");
-  console.log("TO:", to);
-  console.log("BODY:", body);
-  console.log("----------------\n");
-
-  return {
-    providerId: `fake_sms_${Date.now()}`,
-  };
-}
-
-/**
- * Simulates the full V1 flow:
- * 1. Receive SMS
- * 2. Create Message
- * 3. Generate AI reply
- * 4. Create Suggestion
- * 5. Simulate user decision
- * 6. Create Execution
- * 7. Send SMS
- */
 export async function receiveFakeSms(content: string) {
   console.log("1. Incoming fake SMS received");
 
@@ -58,6 +33,10 @@ export async function receiveFakeSms(content: string) {
     status: message.status,
   });
 
+  const classification = await classifyMessage(message.content);
+
+  console.log("3. Message classified:", classification);
+
   const reply = await generateReply({
     content: message.content,
     channel: "sms",
@@ -66,28 +45,24 @@ export async function receiveFakeSms(content: string) {
   const suggestion = createSuggestion({
     messageId: message.id,
     type: "reply_sms",
-    summary: "AI-generated SMS reply suggestion",
+    summary: classification.summary,
     proposedText: reply,
     confidence: 0.87,
     context: {
-      detectedIntent: "general_request",
-      priority: "medium",
+      detectedIntent: classification.intent,
+      priority: classification.priority,
       suggestedActionLabel: "Reply",
     },
   });
 
   updateMessageStatus(message.id, "suggested");
 
-  console.log("3. Suggestion created:", {
+  console.log("4. Suggestion created:", {
     id: suggestion.id,
     messageId: suggestion.messageId,
     proposedText: suggestion.proposedText,
   });
 
-  /**
-   * Simulate user action here.
-   * Change "approve" to "edit" or "cancel" to test other paths.
-   */
   const simulatedAction: "approve" | "edit" | "cancel" = "approve";
 
   if (simulatedAction === "cancel") {
@@ -100,8 +75,8 @@ export async function receiveFakeSms(content: string) {
 
     updateMessageStatus(message.id, "cancelled");
 
-    console.log("4. Decision created:", decision);
-    console.log("5. Flow stopped: user cancelled");
+    console.log("5. Decision created:", decision);
+    console.log("6. Flow stopped: user cancelled");
     return;
   }
 
@@ -120,7 +95,7 @@ export async function receiveFakeSms(content: string) {
 
   updateMessageStatus(message.id, simulatedAction === "edit" ? "edited" : "approved");
 
-  console.log("4. Decision created:", {
+  console.log("5. Decision created:", {
     id: decision.id,
     action: decision.action,
     editedText: decision.editedText,
@@ -143,7 +118,7 @@ export async function receiveFakeSms(content: string) {
     },
   });
 
-  console.log("5. Execution created:", {
+  console.log("6. Execution created:", {
     id: execution.id,
     type: execution.type,
     status: execution.status,
@@ -151,7 +126,10 @@ export async function receiveFakeSms(content: string) {
   });
 
   try {
-    const result = await sendSms(message.from, finalBody);
+    const result = await sendSms({
+      to: message.from,
+      body: finalBody,
+    });
 
     updateExecutionStatus(execution.id, "done", {
       result,
@@ -159,8 +137,8 @@ export async function receiveFakeSms(content: string) {
 
     updateMessageStatus(message.id, "executed");
 
-    console.log("6. Execution completed successfully");
-    console.log("7. Message flow finished");
+    console.log("7. Execution completed successfully");
+    console.log("8. Message flow finished");
   } catch (error) {
     updateExecutionStatus(execution.id, "failed", {
       error: error instanceof Error ? error.message : "Unknown error",
@@ -168,13 +146,10 @@ export async function receiveFakeSms(content: string) {
 
     updateMessageStatus(message.id, "failed");
 
-    console.error("6. Execution failed:", error);
+    console.error("7. Execution failed:", error);
   }
 }
 
-/**
- * Run directly for manual local testing.
- */
 async function main() {
   await receiveFakeSms("Bonjour, vous êtes dispo demain ?");
 }
