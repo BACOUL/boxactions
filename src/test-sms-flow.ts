@@ -11,6 +11,10 @@ import { sendSms } from "./executions/sendSms";
 
 type SimulatedAction = "approve" | "edit" | "cancel";
 
+function getSimulatedAction(): SimulatedAction {
+  return "approve";
+}
+
 export async function receiveFakeSms(content: string) {
   console.log("1. Incoming fake SMS received");
 
@@ -65,7 +69,7 @@ export async function receiveFakeSms(content: string) {
     proposedText: suggestion.proposedText,
   });
 
-  const simulatedAction: SimulatedAction = "approve";
+  const simulatedAction = getSimulatedAction();
 
   if (simulatedAction === "cancel") {
     const decision = createDecision({
