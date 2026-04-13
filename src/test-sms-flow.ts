@@ -9,6 +9,8 @@ import { generateReply } from "./ai/generateReply";
 import { classifyMessage } from "./ai/classifyMessage";
 import { sendSms } from "./executions/sendSms";
 
+type SimulatedAction = "approve" | "edit" | "cancel";
+
 export async function receiveFakeSms(content: string) {
   console.log("1. Incoming fake SMS received");
 
@@ -63,7 +65,7 @@ export async function receiveFakeSms(content: string) {
     proposedText: suggestion.proposedText,
   });
 
-  const simulatedAction: "approve" | "edit" | "cancel" = "approve";
+  const simulatedAction: SimulatedAction = "approve";
 
   if (simulatedAction === "cancel") {
     const decision = createDecision({
@@ -93,7 +95,10 @@ export async function receiveFakeSms(content: string) {
     decidedBy: "demo_user",
   });
 
-  updateMessageStatus(message.id, simulatedAction === "edit" ? "edited" : "approved");
+  updateMessageStatus(
+    message.id,
+    simulatedAction === "edit" ? "edited" : "approved",
+  );
 
   console.log("5. Decision created:", {
     id: decision.id,
